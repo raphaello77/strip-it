@@ -15,14 +15,13 @@ class StripIt extends Modifier {
 
     public function index($value, $params, $context) {
 
-        // set user input for keep => [] and remove => []
+        // Params for specific things to keep => [] and remove => []
         $params = [
-            'remove'=> explode(',', $params[0]),
+            'remove' => explode(',', $params[0]),
             'keep' => explode(',', $params[1])
         ];
 
         return new StripCollection($value, $params);
-
     }
 }
 
@@ -37,13 +36,15 @@ class StripCollection {
 
     function __construct($value, $params) {
         $this->params = $params;
-            $this->newStripper($value);
+        $this->newStripper($value);
     }
 
     private function newStripper($value) {
 
+        // Find out if its an Entry or Asset or something else
         $type = class_basename($value);
 
+        // Only proceed to try stripping certain things. Everything else remains untouched.
         switch ($type) {
 
             case 'Entry':
@@ -72,35 +73,41 @@ class StripCollection {
  */
 class Stripper {
 
-    /* public vars will dynamically set */
+    /* Public vars will dynamically set */
     protected $original;
     protected $keepItOn;
 
     function __construct($value, $params) {
 
         $this->original = $value;
+
+        // $keepItOn = allFields - ( fieldsToKeep - fieldsToRemove )
         $keep = $params['keep'] ?? [];
         $remove = $params['remove'] ?? [];
         $keepItOn = array_merge($keep, $this->whatToKeep());
         $takeItOff = array_merge($remove, $this->whatToRemove());
         $this->keepItOn = array_diff($keepItOn, $takeItOff);
+
         $this->strip();
     }
 
     protected function whatToKeep() {
+        // Fields to keep by default
         return [];
     }
 
     protected function whatToRemove() {
+        // Fields to remove by default
         return ['parent'];
     }
 
     protected function strip() {
+        // $stripped = allFields - fieldsToRemove
         $this->stripped = array_intersect_key($this->original->toAugmentedArray(), array_flip($this->keepItOn));
     }
 
     protected function hasChildren($data) {
-
+        // Try to decice if we should go deeper
         $type = $data->fieldtype();
         $hasMore = (bool) $data->raw();
 
@@ -119,13 +126,15 @@ class Stripper {
 class AssetStripper extends Stripper {
 
     protected function whatToKeep() {
+        // Default fields to keep for Assets
         return ['url', 'title', 'alt'];
     }
 
     protected function strip() {
-
+        // $stripped = allFields - fieldsToRemove
         $stripped = array_intersect_key($this->original->toAugmentedArray(), array_flip($this->whatToKeep()));
 
+        // Set class variables ($name = handle)
         foreach ($stripped as $name => $value) {
             $this->$name = $value->value();
         }
@@ -139,19 +148,20 @@ class AssetStripper extends Stripper {
 class EntryStripper extends Stripper {
 
     protected function whatToKeep() {
-        // keep the blueprint fields
+        // Default fields to keep for Entries (extracted from the Entry blueprint)
         return array_keys($this->original->blueprint->fields()->all()->toArray());
     }
 
     protected function strip() {
-
+        // $stripped = allFields - fieldsToRemove
         $stripped = array_intersect_key($this->original->toAugmentedArray(), array_flip($this->keepItOn));
 
-            foreach ($stripped as $name => $data) {
-                if ($this->hasChildren($data)) {
+        // Loop remaining fields and look for children to strip
+        foreach ($stripped as $name => $data) {
+            if ($this->hasChildren($data)) {
                 $this->$name = new StripCollection($data->value(), ['keep' => $this->keepItOn]);
-                } elseif ($data->raw()) {
-                    $this->$name = $data->value();
+            } elseif ($data->raw()) {
+                $this->$name = $data->value();
             }
         }
     }
