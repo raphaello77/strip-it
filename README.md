@@ -1,13 +1,14 @@
 # strip-it
 
-Example of use
-``` <product-slider :slides="{{ slides | strip_it::size,slug | to_json | entities }}" />```
+### Example of use
+``` <product-slider :slides="{{ slides | strip_it | to_json | entities }}" />```
 
-Or like this, where 'title, name' always get removed while 'size,slug' never get removed.
+Or like this, where 'title, name' **always** get removed while 'size,slug' **never** get removed.
+
 ```<product-slider :slides="{{ slides | strip_it:title,name:size,slug | to_json | entities }}" />```
 
-Output should hopefully result in something looking for example like this
-```
+Output should hopefully result in something looking for example like this:
+```json
 {
     "items":
     [
