@@ -17,8 +17,8 @@ class StripIt extends Modifier {
 
         // Params for specific things to keep => [] and remove => []
         $params = [
-            'remove' => explode(',', isset($params[0]) ?? $params[0] ?? ''),
-            'keep' => explode(',', isset($params[1]) ?? $params[1] ?? '')
+            'remove' => isset($params[0]) ? explode(',',$params[0]) : null,
+            'keep' => isset($params[1]) ? explode(',',$params[1]) : null,
         ];
 
         return new StripCollection($value, $params);
